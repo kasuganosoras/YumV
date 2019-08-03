@@ -9,6 +9,15 @@ YumV 是一个 FiveM 服务器的插件管理器，它允许你像使用 CentOS 
 - 显示所有已安装的插件
 
 ## 安装方法
+在开始安装之前，请先确认你的服务器已经安装了 wget 和 unzip，如果没有的话可以用以下命令安装
+```bash
+# 这是 Linux Shell，不是在游戏服务器里输入
+yum install wget unzip -y
+# 如果你的服务器是 Ubuntu 或者 Debian
+apt-get install wget unzip -y
+```
+一切准备就绪后，我们开始安装 YumV！
+
 首先，打开你的 FiveM 服务器的资源文件夹，例如 `/home/akkariin/fivem/resources/`。
 ```
 cd /home/akkariin/fivem/resources/
