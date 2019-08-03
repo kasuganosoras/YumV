@@ -1,7 +1,7 @@
 # YumV
 YumV is a FiveM server script, you can use it to install plugin, vehicle and maps quickly, like use the yum in CentOS.
 
-[README_zh.md](点我阅读中文介绍)
+[点我阅读中文介绍](README_zh.md)
 
 ## Feature
 - Auto install plugin, vehicle, maps, peds or other.
