@@ -11,6 +11,15 @@ YumV is a FiveM server script, you can use it to install plugin, vehicle and map
 - Show the installed plugin list.
 
 ## Installation
+Before install YumV, you need to install __wget__ and __unzip__ in your system.
+```bash
+# Is the Linux shell, not in game!
+yum install wget unzip -y
+# If your server is Ubuntu or Debian
+apt-get install wget unzip -y
+```
+Now, let's start install YumV!
+
 First, goto your FXServer resources directory, such as `/home/akkariin/fivem/resources/`.
 ```
 cd /home/akkariin/fivem/resources/
