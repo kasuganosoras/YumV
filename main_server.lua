@@ -8,7 +8,7 @@ local yum = {}
 -- FiveM YumV config
 yum.mirror = "https://yumv.net/"
 yum.version = "1.0.1"
-yum.versionnum = 1
+yum.versionnum = 11
 -- End
 
 local downloading = 0
