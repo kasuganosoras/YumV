@@ -163,8 +163,8 @@ function listAllPlugin(tb)
 		if length <= 32 then
 			padding = string.rep(" ", 32 - length)
 		end
-		if length2 <= 32 then
-			padding2 = string.rep(" ", 32 - length2)
+		if length2 <= 16 then
+			padding2 = string.rep(" ", 16 - length2)
 		end
 		print("| " .. value.name .. padding .. " | " .. tostring(value.version) .. padding2 .. " |")
 	end
