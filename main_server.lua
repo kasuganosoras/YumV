@@ -7,7 +7,7 @@ local yum = {}
 
 -- FiveM YumV config
 yum.mirror = "https://yumv.net/"
-yum.version = "1.0"
+yum.version = "1.0.1"
 yum.versionnum = 1
 -- End
 
@@ -150,9 +150,9 @@ end
 
 -- 列出所有插件
 function listAllPlugin(tb)
-	print("+------------------+------------------+")
-	print("| Name             | Version          |")
-	print("+------------------+------------------+")
+	print("+----------------------------------+------------------+")
+	print("| Name                             | Version          |")
+	print("+----------------------------------+------------------+")
 	local i = 0
 	for key, value in pairs(tb) do
 		i = i + 1
@@ -160,19 +160,19 @@ function listAllPlugin(tb)
 		local padding2 = " "
 		local length = strlen(value.name)
 		local length2 = strlen(tostring(value.version))
-		if length <= 16 then
-			padding = string.rep(" ", 16 - length)
+		if length <= 32 then
+			padding = string.rep(" ", 32 - length)
 		end
-		if length2 <= 16 then
-			padding2 = string.rep(" ", 16 - length2)
+		if length2 <= 32 then
+			padding2 = string.rep(" ", 32 - length2)
 		end
 		print("| " .. value.name .. padding .. " | " .. tostring(value.version) .. padding2 .. " |")
 	end
 	local length3 = strlen(tostring(i))
-	padding3 = string.rep(" ", 35 - length3 - 19)
-	print("+------------------+------------------+")
+	padding3 = string.rep(" ", 51 - length3 - 19)
+	print("+----------------------------------+------------------+")
 	print("| Total: " .. tostring(i) .. " resource(s)" .. padding3 .. " |")
-	print("+------------------+------------------+")
+	print("+-----------------------------------------------------+")
 end
 
 -- 加载所有插件
