@@ -7,8 +7,8 @@ local yum = {}
 
 -- FiveM YumV config
 yum.mirror = "https://yumv.net/"
-yum.version = "1.0.1"
-yum.versionnum = 11
+yum.version = "1.0.2"
+yum.versionnum = 102
 -- End
 
 local downloading = 0
@@ -172,7 +172,7 @@ function listAllPlugin(tb)
 	padding3 = string.rep(" ", 51 - length3 - 19)
 	print("+----------------------------------+------------------+")
 	print("| Total: " .. tostring(i) .. " resource(s)" .. padding3 .. " |")
-	print("+-----------------------------------------------------+")
+	print("+----------------------------------+------------------+")
 end
 
 -- 加载所有插件
@@ -291,13 +291,60 @@ function addNewPlugin(name, version)
 	file_put_contents(current_dir .. "/list.json", json.encode(data))
 end
 
+-- 检查 YumV 更新
+function checkUpdate()
+	print("[YumV] Checking for YumV new version...")
+	Citizen.CreateThread(function()
+		local url = yum.mirror .. "?s=check_update&yum_version=" .. urlencode(yum.versionnum)
+		local rs = curl(url, 'GET')
+		if rs.status == 200 then
+			print(rs.body)
+		else
+			print("[YumV] Failed check plugin update, please check your network.")
+		end
+	end)
+end
+
+function updateSelf()
+	print("[YumV] Updating YumV to new version...")
+	Citizen.CreateThread(function()
+		local url = yum.mirror .. "?s=get_update&yum_version=" .. urlencode(yum.versionnum)
+		local rs = curl(url, 'GET')
+		if rs.status == 200 then
+			local new_version = tonumber(rs.body)
+			if yum.versionnum == new_version then
+				print("[YumV] Your YumV is newest version, not need to update.")
+			else
+				url = yum.mirror .. "?s=get_update_download&yum_version=" .. urlencode(rs.body)
+				rs = curl(url, 'GET')
+				if rs.status == 200 then
+					print("[YumV] Downloading files, please don't stop the server.")
+					local cmd = "wget -q -4 \"" .. rs.body .. "\" -O \"" .. current_dir .. "/update.zip\""
+					-- print(cmd)
+					file_put_contents(current_dir .. "/update.zip", "")
+					-- 开始下载
+					os.execute(cmd)
+					print("[YumV] Download finished, decompressing... ")
+					unzip(current_dir .. "/update.zip", current_dir .. "/")
+					os.remove(current_dir .. "/update.zip");
+					print("[YumV] Update finished, please execute command: \"restart yum\".")
+				else
+					print("[YumV] Failed check plugin update, server return: " .. tostring(rs.status))
+				end
+			end
+		else
+			print("[YumV] Failed check plugin update, server return: " .. tostring(rs.status))
+		end
+	end)
+end
+
 -- 安装插件
 function installPlugin(name, version)
 	local url = ""
 	if version == nil then
-		url = yum.mirror .. "?s=download&name=" .. urlencode(name)
+		url = yum.mirror .. "?s=download&name=" .. urlencode(name) .. "&yum_version=" .. urlencode(yum.versionnum)
 	else
-		url = yum.mirror .. "?s=download&name=" .. urlencode(name) .. "&version=" .. urlencode(version)
+		url = yum.mirror .. "?s=download&name=" .. urlencode(name) .. "&version=" .. urlencode(version) .. "&yum_version=" .. urlencode(yum.versionnum)
 	end
 	local rs = curl(url, 'GET')
 	if rs.status == 200 then
@@ -395,6 +442,8 @@ function printHelp()
 	print("    search <name>                 Search a plugin in mirror database")
 	print("    list                          List all installed plugin")
 	print("    version                       Show the yum plugin version")
+	print("    checkyumv                     Check if YumV has new version")
+	print("    updateself                    Update YumV to newest version")
 end
 
 -- 注册命令
@@ -404,10 +453,7 @@ RegisterCommand("yum", function(source, args, rawCommand)
 		printHelp()
 	else
 		if args[1] == "test" then
-			local f = assert(io.open("/tmp/fivem-yum-temp.zip", "rb"))
-			local size = f:seek("end")
-			f:close()
-			print(size)
+			ExecuteCommand("restart yum")
 			
 		-- 删除一个插件
 		elseif args[1] == "remove" then
@@ -569,6 +615,14 @@ RegisterCommand("yum", function(source, args, rawCommand)
 		elseif args[1] == "version" then
 			print("FiveM YumV plugin by Akkariin")
 			print("Version: " .. yum.version)
+		
+		-- 检查 YumV 新版本
+		elseif args[1] == "checkyumv" then
+			checkUpdate()
+		
+		-- 自动更新到新版本
+		elseif args[1] == "updateself" then
+			updateSelf()
 			
 		-- 默认输出
 		else
@@ -579,3 +633,4 @@ end, true)
 
 -- Load all installed plugins
 loadPluginList()
+checkUpdate()
