@@ -7,8 +7,8 @@ local yum = {}
 
 -- FiveM YumV config
 yum.mirror = "https://yumv.net/"
-yum.version = "1.0.2"
-yum.versionnum = 102
+yum.version = "1.0.3"
+yum.versionnum = 103
 -- End
 
 local downloading = 0
@@ -258,6 +258,29 @@ function getPluginVersion(name)
 	return false
 end
 
+-- 获取插件版本号
+function getPluginPath(name)
+	if file_exists(current_dir .. "/list.json") then
+		local data = file_get_contents(current_dir .. "/list.json")
+		data = json.decode(data)
+		if data.list == nil then
+			return false
+		else
+			for key, value in pairs(data.list) do
+				if value.name == name then
+					if value.path == nil then
+						value.path = "/[YumV-plugins]/"
+					end
+					return value.path
+				end
+			end
+		end
+	else
+		print("[YumV] Cannot found resources list! Please use \"yum fix-list\" to fix it!")
+	end
+	return false
+end
+
 -- 从列表中删除一个插件
 function removePluginFromList(name)
 	if file_exists(current_dir .. "/list.json") then
@@ -281,13 +304,13 @@ function removePluginFromList(name)
 end
 
 -- 增加一个新插件到列表
-function addNewPlugin(name, version)
+function addNewPlugin(name, version, path)
 	local data = file_get_contents(current_dir .. "/list.json")
 	data = json.decode(data)
 	if data.list == nil then
 		data.list = {}
 	end
-	table.insert(data.list, {name = name, version = version})
+	table.insert(data.list, {name = name, version = version, path = path})
 	file_put_contents(current_dir .. "/list.json", json.encode(data))
 end
 
@@ -352,6 +375,7 @@ function installPlugin(name, version)
 		local plugin_version = rs.header.version
 		local plugin_size = rs.header.size
 		local plugin_rsize = rs.header.realsize
+		local plugin_dir = rs.header.installdir
 		downloading = plugin_rsize
 		if (rs.header.depend == nil) == false then
 			depend = json.decode(rs.header.depend)
@@ -369,10 +393,13 @@ function installPlugin(name, version)
 			print("[YumV] An error occurred when fetch the command name")
 			return false
 		else
+			if plugin_dir == nil or plugin_dir == "" then
+				plugin_dir = "/[YumV-plugins]/"
+			end
 			if checkPluginExist(plugin_name) == false then
 				print("[YumV] Found plugin: " .. plugin_name)
-				if not file_exists(current_dir .. "/../[YumV-plugins]/" .. plugin_name .. "/") then
-					os.execute("mkdir -p '" .. current_dir .. "/../[YumV-plugins]/" .. plugin_name .. "/'")
+				if not file_exists(current_dir .. "/.." .. plugin_dir .. plugin_name .. "/") then
+					os.execute("mkdir -p '" .. current_dir .. "/.." .. plugin_dir .. plugin_name .. "/'")
 				end
 				print("[YumV] Downloading: " .. rs.body .. " => /tmp/fivem-yum-temp.zip (" .. plugin_size .. ")")
 				local cmd = "wget -q -4 \"" .. rs.body .. "\" -O \"/tmp/fivem-yum-temp.zip\" &"
@@ -406,11 +433,11 @@ function installPlugin(name, version)
 				print("")
 				Wait(1000)
 				print("[YumV] Download finished, decompressing... ")
-				unzip('/tmp/fivem-yum-temp.zip', current_dir .. "/../[YumV-plugins]/" .. rs.header.plugin .. "/")
+				unzip('/tmp/fivem-yum-temp.zip', current_dir .. "/.." .. plugin_dir .. rs.header.plugin .. "/")
 				ExecuteCommand("refresh")
 				io.write("[YumV] ")
 				if StartResource(plugin_name) then
-					addNewPlugin(plugin_name, tonumber(plugin_version))
+					addNewPlugin(plugin_name, tonumber(plugin_version), plugin_dir)
 					print("[YumV] Plugin " .. plugin_name .. " install successful!")
 					return true
 				else
@@ -462,7 +489,8 @@ RegisterCommand("yum", function(source, args, rawCommand)
 			else
 				if checkPluginInList(args[2]) then
 					StopResource(args[2])
-					os.execute("rm -rf '" .. current_dir .. "/../[YumV-plugins]/" .. args[2] .. "/'")
+					local rmdir = getPluginPath(args[2])
+					os.execute("rm -rf '" .. current_dir .. "/.." .. rmdir .. args[2] .. "/'")
 					if removePluginFromList(args[2]) then
 						print("[YumV] Plugin delete successful!")
 					else
@@ -545,12 +573,16 @@ RegisterCommand("yum", function(source, args, rawCommand)
 						local plugin_name = rs.header.plugin
 						local plugin_version = tonumber(rs.header.version)
 						local local_version = tonumber(getPluginVersion(plugin_name))
+						local plugin_dir = rs.header.installdir
 						if local_version == false then
 							print("[YumV] Cannot update '" .. args[2] .. "', failed to get local version, please check your list.json!")
 						else
 							if plugin_version > local_version then
-								if not file_exists(current_dir .. "/../[YumV-plugins]/" .. plugin_name .. "/") then
-									os.execute("mkdir -p '" .. current_dir .. "/../[YumV-plugins]/" .. plugin_name .. "/'")
+								if plugin_dir == nil or plugin_dir == "" then
+									plugin_dir = "/[YumV-plugins]/"
+								end
+								if not file_exists(current_dir .. "/.." .. plugin_dir .. plugin_name .. "/") then
+									os.execute("mkdir -p '" .. current_dir .. "/.." .. plugin_dir .. plugin_name .. "/'")
 								end
 								print("[YumV] Downloading: " .. rs.body)
 								local cmd = "wget -q -4 \"" .. rs.body .. "\" -O \"/tmp/fivem-yum-temp.zip\""
@@ -558,13 +590,13 @@ RegisterCommand("yum", function(source, args, rawCommand)
 								os.execute(cmd)
 								print("[YumV] Download finished, deleting old version... ")
 								StopResource(args[2])
-								os.execute("rm -rf '" .. current_dir .. "/../[YumV-plugins]/" .. args[2] .. "/'")
+								os.execute("rm -rf '" .. current_dir .. "/.." .. plugin_dir .. args[2] .. "/'")
 								removePluginFromList(plugin_name)
 								print("[YumV] Decompressing file... ")
-								unzip('/tmp/fivem-yum-temp.zip', current_dir .. "/../[YumV-plugins]/" .. rs.header.plugin .. "/")
+								unzip('/tmp/fivem-yum-temp.zip', current_dir .. "/.." .. plugin_dir .. rs.header.plugin .. "/")
 								ExecuteCommand("refresh")
 								if StartResource(plugin_name) then
-									addNewPlugin(plugin_name, plugin_version)
+									addNewPlugin(plugin_name, plugin_version, plugin_dir)
 									print("[YumV] Plugin update successful!")
 								else
 									print("[YumV] Failed to start resource! please check your console output to see more info.")
